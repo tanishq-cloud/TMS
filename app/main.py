@@ -4,6 +4,7 @@ from app.database import init_db
 from app.utils.scheduler import init_scheduler
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
+import logging
 
 app = FastAPI()
 
@@ -20,7 +21,12 @@ scheduler = init_scheduler()
 
 @app.on_event("startup")
 async def startup_event():
-    await init_db()
+    try:
+        await init_db()
+    except Exception as e:
+        logging.error(f"Database initialization failed: {str(e)}", exc_info=True)
+        raise RuntimeError("Failed to initialize database") from e
+    
     
     # Start the scheduler
     scheduler.start()

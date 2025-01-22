@@ -2,9 +2,24 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import inspect
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 # PostgreSQL database URL
-DATABASE_URL = "postgresql+asyncpg://cooluser:cool@localhost:5432/tasks"
+psg_user = os.getenv('PSG_USER')
+psg_password = os.getenv('PSG_PASSWORD')
+psg_database = os.getenv('PSG_DATABASE')
+
+# Validate critical environment variables
+required_env_vars = ['PSG_USER', 'PSG_PASSWORD', 'PSG_DATABASE']
+missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+
+if missing_vars:
+    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}. "
+                     "Please set these in your .env file or environment.")
+    
+DATABASE_URL = f"postgresql+asyncpg://{psg_user}:{psg_password}@localhost:5432/{psg_database}"
 
 # Create async engine for PostgreSQL
 engine = create_async_engine(DATABASE_URL, echo=True)
