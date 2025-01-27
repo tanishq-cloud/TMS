@@ -47,7 +47,7 @@ async def completed_tasks_per_day(
     plt.title("Completed Tasks Per Day")
     plt.xlabel("Date")
     plt.ylabel("Number of Completed Tasks")
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=0)
 
     buffer = save_plot_to_stream()
     return StreamingResponse(buffer, media_type="image/png")
