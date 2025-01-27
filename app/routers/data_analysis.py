@@ -15,14 +15,14 @@ router = APIRouter()
 
 @router.get("/clean")
 async def clean_data(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    # Fetch data asynchronously
+    
     result = await db.execute(select(models.Task))
     tasks = result.scalars().all()
 
     if not tasks:
         return {"message": "No tasks found"}
 
-    # Convert to DataFrame with only model columns
+    
     task_data = [
         {
             "task_id": task.task_id,
@@ -38,7 +38,7 @@ async def clean_data(db: AsyncSession = Depends(get_db), current_user: models.Us
     ]
     df = pd.DataFrame(task_data)
 
-    # Clean data
+    
     df = df.drop_duplicates(subset=["task_id", "assigned_to"])
     df["due_date"] = pd.to_datetime(df["due_date"], errors="coerce")
     df["completed_date"] = pd.to_datetime(df["completed_date"], errors="coerce")
@@ -46,8 +46,8 @@ async def clean_data(db: AsyncSession = Depends(get_db), current_user: models.Us
         lambda x: "completed" if pd.notnull(x) else "pending"
     )
 
-    # Replace table content with cleaned data
-    await db.execute(text("DELETE FROM tasks"))  # Clear existing table
+    
+    await db.execute(text("DELETE FROM tasks"))  
     for _, row in df.iterrows():
         new_task = models.Task(
             task_id=row["task_id"],
@@ -67,14 +67,14 @@ async def clean_data(db: AsyncSession = Depends(get_db), current_user: models.Us
 
 @router.get("/overdue")
 async def analyze_overdue(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    # Fetch data asynchronously
+    
     result = await db.execute(select(models.Task))
     tasks = result.scalars().all()
 
     if not tasks:
         return {"overdue_tasks": 0, "total_tasks": 0}
 
-    # Convert to DataFrame with only model columns
+   
     task_data = [
         {
             "task_id": task.task_id,
@@ -86,7 +86,7 @@ async def analyze_overdue(db: AsyncSession = Depends(get_db), current_user: mode
     ]
     df = pd.DataFrame(task_data)
 
-    # Analyze overdue tasks
+    
     df["due_date"] = pd.to_datetime(df["due_date"], errors="coerce")
     df["completed_date"] = pd.to_datetime(df["completed_date"], errors="coerce")
     df["overdue"] = df.apply(
@@ -110,14 +110,14 @@ async def analyze_completion_time(
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    # Fetch data asynchronously
+    
     result = await db.execute(select(models.Task))
     tasks = result.scalars().all()
 
     if not tasks:
         return {"average_completion_time": None}
 
-    # Convert to DataFrame with only model columns
+    
     task_data = [
         {
             "task_id": task.task_id,
@@ -128,7 +128,7 @@ async def analyze_completion_time(
     ]
     df = pd.DataFrame(task_data)
 
-    # Calculate completion time
+    
     df["creation_time"] = pd.to_datetime(df["creation_time"], errors="coerce")
     df["completed_date"] = pd.to_datetime(df["completed_date"], errors="coerce")
     df["completion_time"] = df.apply(
@@ -145,7 +145,7 @@ async def analyze_completion_time(
 
 @router.get("/download-tasks-csv")
 async def download_tasks_csv(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    # Fetch data asynchronously
+    
     result = await db.execute(select(models.Task))
     tasks = result.scalars().all()
     tasks = sorted(tasks, key=lambda task: task.task_id)
@@ -153,15 +153,15 @@ async def download_tasks_csv(db: AsyncSession = Depends(get_db), current_user: m
     if not tasks:
         raise HTTPException(status_code=404, detail="No tasks found")
 
-    # Prepare the CSV data
+    
     csv_file = StringIO()
     csv_writer = csv.writer(csv_file)
 
-    # Write headers
+    
     headers = ["task_id", "name", "description", "due_date", "completed_date", "status", "assigned_to", "priority"]
     csv_writer.writerow(headers)
 
-    # Write task data rows
+    
     for task in tasks:
         csv_writer.writerow([
             task.task_id,
@@ -176,7 +176,7 @@ async def download_tasks_csv(db: AsyncSession = Depends(get_db), current_user: m
 
     csv_file.seek(0)
 
-    # Return CSV as a streaming response
+    
     return StreamingResponse(
         csv_file,
         media_type="text/csv",

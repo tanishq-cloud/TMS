@@ -14,10 +14,10 @@ import os
 
 async def notify_due_tasks():
     try:
-        # Create a database session
+        
         db = await anext(get_db())
 
-        # Fetch tasks due within the next 24 hours
+        
         now = datetime.now()
         deadline = now + timedelta(hours=24)
 
@@ -56,7 +56,7 @@ async def notify_due_tasks():
     """
             mailmessage += "</ul>"
 
-            # Notify all Telegram subscribers
+            
             result = await db.execute(select(models.TelegramSubscriber))
             subscribers = result.scalars().all()
 
@@ -67,7 +67,7 @@ async def notify_due_tasks():
                     logging.error(f"Failed to send Telegram message to {
                                   subscriber.chat_id}: {e}")
 
-            # Send Email Notification
+            
             sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
 
             mail_message = Mail(
@@ -87,6 +87,6 @@ async def notify_due_tasks():
 def init_scheduler():
     scheduler = AsyncIOScheduler()
 
-    # Add the notification job to the scheduler
+    
     scheduler.add_job(notify_due_tasks, "interval", hours=12)
     return scheduler

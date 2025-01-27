@@ -28,7 +28,7 @@ async def startup_event():
         raise RuntimeError("Failed to initialize database") from e
     
     
-    # Start the scheduler
+  
     scheduler.start()
 
     
