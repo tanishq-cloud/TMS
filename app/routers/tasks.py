@@ -15,26 +15,40 @@ async def create_task(
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    new_task = models.Task(
-        name=task.name,
-        description=task.description,
-        due_date=task.due_date,
-        assigned_to=task.assigned_to,
-        priority=task.priority,
-    )
-    db.add(new_task)
-    await db.commit()
-    await db.refresh(new_task)
-    return new_task
+    """
+    Create a new task.
+    """
+    
+    try:
+        new_task = models.Task(
+            name=task.name,
+            description=task.description,
+            due_date=task.due_date,
+            assigned_to=task.assigned_to,
+            priority=task.priority,
+        )
+        db.add(new_task)
+        await db.commit()
+        await db.refresh(new_task)
+        return new_task
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
 @router.get("/", response_model=List[schemas.TaskResponse])
 async def list_tasks(
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    result = await db.execute(select(models.Task))
-    tasks = result.scalars().all()
-    return tasks
+    """
+   Get all the task posted by the user.
+    """
+    
+    try:
+        result = await db.execute(select(models.Task))
+        tasks = result.scalars().all()
+        return tasks
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching tasks: {str(e)}")
 
 @router.get("/{task_id}", response_model=schemas.TaskResponse)
 async def get_task(
@@ -42,11 +56,18 @@ async def get_task(
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
-    task = result.scalars().first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return task
+    
+    """
+   Get the task posted by the user by taskid.
+    """
+    try:
+        result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
+        task = result.scalars().first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        return task
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching task: {str(e)}")
 
 @router.put("/{task_id}", response_model=schemas.TaskResponse)
 async def update_task(
@@ -55,21 +76,28 @@ async def update_task(
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
-    task = result.scalars().first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+    """
+    Update many fields of a specific task.
+    """
+    
+    try:
+        result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
+        task = result.scalars().first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
 
-    update_data = task_update.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(task, key, value)
+        update_data = task_update.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(task, key, value)
 
-    if task.status == "completed" and not task.completed_date:
-        task.completed_date = datetime.utcnow()
+        if task.status == "completed" and not task.completed_date:
+            task.completed_date = datetime.utcnow()
 
-    await db.commit()
-    await db.refresh(task)
-    return task
+        await db.commit()
+        await db.refresh(task)
+        return task
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating task: {str(e)}")
 
 @router.delete("/{task_id}")
 async def delete_task(
@@ -77,14 +105,21 @@ async def delete_task(
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
-    task = result.scalars().first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+    
+    """
+    Delete a specific task by task id.
+    """
+    try:
+        result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
+        task = result.scalars().first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
 
-    await db.delete(task)
-    await db.commit()
-    return {"detail": "Task deleted successfully"}
+        await db.delete(task)
+        await db.commit()
+        return {"detail": "Task deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting task: {str(e)}")
 
 @router.post("/{task_id}/schedule")
 async def schedule_task(
@@ -93,58 +128,79 @@ async def schedule_task(
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
-    task = result.scalars().first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+    
+    """
+    Schedule new task.
+    """
+    try:
+        result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
+        task = result.scalars().first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
 
-    if not task.due_date:
-        raise HTTPException(status_code=400, detail="Task has no due date")
+        if not task.due_date:
+            raise HTTPException(status_code=400, detail="Task has no due date")
 
-    reminder_time = task.due_date - timedelta(hours=1)
-    background_tasks.add_task(send_reminder, task.name, reminder_time)
-    return {"detail": "Reminder scheduled"}
+        reminder_time = task.due_date - timedelta(hours=1)
+        background_tasks.add_task(send_reminder, task.name, reminder_time)
+        return {"detail": "Reminder scheduled"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error scheduling reminder: {str(e)}")
 
-@router.put("/{task_id}/status", response_model=schemas.TaskResponse)
+@router.patch("/{task_id}/status", response_model=schemas.TaskResponse)
 async def update_task_status(
     task_id: int,
     status_update: schemas.UpdateStatusRequest,
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
-    task = result.scalars().first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-
+    """
+    Update the status of a specific task.
+    """
     try:
-        task.update_status(models.TaskStatus(status_update.status))
-        if task.status == "completed" and not task.completed_date:
-            task.completed_date = datetime.utcnow()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid status value")
+        result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
+        task = result.scalars().first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
 
-    await db.commit()
-    await db.refresh(task)
-    return task
+        try:
+            task.update_status(models.TaskStatus(status_update.status))
+            if task.status == "completed" and not task.completed_date:
+                task.completed_date = datetime.utcnow()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid status value")
 
-@router.put("/{task_id}/due_date", response_model=schemas.TaskResponse)
+        await db.commit()
+        await db.refresh(task)
+        return task
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating task status: {str(e)}")
+
+@router.patch("/{task_id}/due_date", response_model=schemas.TaskResponse)
 async def update_task_due_date(
     task_id: int,
     new_due_date_update: schemas.UpdateNewDueDateRequest,
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
-    task = result.scalars().first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+    """
+    Update the due date of a specific task.
+    """
+    try:
+        result = await db.execute(select(models.Task).filter(models.Task.task_id == task_id))
+        task = result.scalars().first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
 
-    task.update_due_date(new_due_date_update.due_date)
+        task.update_due_date(new_due_date_update.due_date)
 
-    await db.commit()
-    await db.refresh(task)
-    return task
-
+        await db.commit()
+        await db.refresh(task)
+        return task
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating task due date: {str(e)}")
 async def send_reminder(task_name: str, reminder_time: datetime):
-    print(f"Reminder: Task '{task_name}' is due at {reminder_time}")
+    try:
+        print(f"Reminder: Task '{task_name}' is due at {reminder_time}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error sending reminder: {str(e)}")

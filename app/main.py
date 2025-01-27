@@ -39,8 +39,8 @@ async def shutdown_event():
     print("Scheduler shutdown.")
 
 # Routers
-app.include_router(tasks.router, prefix="/tasks", tags=["Tasks"])
 app.include_router(auth.router, prefix="/auth", tags=["Register and Access Token"])
+app.include_router(tasks.router, prefix="/tasks", tags=["Tasks"])
 app.include_router(data_analysis.router, prefix="/data", tags=["Data Analysis using Pandas"])
 app.include_router(visualisation.router, prefix="/visualisation", tags=["Visualisation using using Matplotlib/Seaborn"])
 app.include_router(trigger.router, prefix="/trigger", tags=["Trigger to notify admin"])
