@@ -13,9 +13,9 @@ psg_database = os.getenv('PSG_DATABASE')
 
 # Validate critical environment variables
 required_env_vars = ['PSG_USER', 'PSG_PASSWORD', 'PSG_DATABASE']
-missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+# missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 
-if missing_vars:
+if missing_vars := [var for var in required_env_vars if not os.getenv(var)]:
     raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}. "
                      "Please set these in your .env file or environment.")
     
@@ -24,7 +24,6 @@ DATABASE_URL = f"postgresql+asyncpg://{psg_user}:{psg_password}@localhost:5432/{
 # Create async engine for PostgreSQL
 engine = create_async_engine(DATABASE_URL, echo=True)
 
-# Async session maker
 async_session = sessionmaker(
     bind=engine,
     class_=AsyncSession,

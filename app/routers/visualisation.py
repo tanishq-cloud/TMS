@@ -21,10 +21,10 @@ async def get_task_data(db: AsyncSession):
         rows = result.fetchall()
 
         # Convert to pandas DataFrame
-        df = pd.DataFrame(rows, columns=result.keys())
-        return df
+        #df = pd.DataFrame(rows, columns=result.keys())
+        return pd.DataFrame(rows, columns=result.keys())
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching task data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching task data: {str(e)}") from e
 
 
 def save_plot_to_stream():
@@ -36,7 +36,7 @@ def save_plot_to_stream():
         plt.close()
         return buffer
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving plot to stream: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving plot to stream: {str(e)}") from e
 
 
 @router.get("/completed-tasks-per-day")
@@ -59,7 +59,7 @@ async def completed_tasks_per_day(
         buffer = save_plot_to_stream()
         return StreamingResponse(buffer, media_type="image/png")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating completed tasks per day chart: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating completed tasks per day chart: {str(e)}") from e
 
 
 @router.get("/task-priority-distribution")
@@ -81,7 +81,7 @@ async def task_priority_distribution(
         buffer = save_plot_to_stream()
         return StreamingResponse(buffer, media_type="image/png")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating task priority distribution chart: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating task priority distribution chart: {str(e)}") from e
 
 
 @router.get("/completion-trends")
@@ -108,7 +108,7 @@ async def completion_trends(
         buffer = save_plot_to_stream()
         return StreamingResponse(buffer, media_type="image/png")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating completion trends chart: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating completion trends chart: {str(e)}") from e
 
 
 @router.get("/time-vs-priority")
@@ -130,4 +130,4 @@ async def time_vs_priority(
         buffer = save_plot_to_stream()
         return StreamingResponse(buffer, media_type="image/png")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating time vs priority chart: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating time vs priority chart: {str(e)}") from e

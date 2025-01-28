@@ -14,8 +14,8 @@ router = APIRouter()
 async def register(user: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
     
     result = await db.execute(select(models.User).filter(models.User.username == user.username))
-    existing_user = result.scalars().first()
-    if existing_user:
+    # existing_user = result.scalars().first()
+    if existing_user := result.scalars().first():
         raise HTTPException(status_code=400, detail="Username already taken")
 
     
