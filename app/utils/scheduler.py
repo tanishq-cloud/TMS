@@ -25,9 +25,9 @@ async def notify_due_tasks():
             select(models.Task).where(models.Task.due_date <=
                                       deadline, models.Task.status != "completed")
         )
-        tasks = result.scalars().all()
+        # tasks = result.scalars().all()
 
-        if tasks:
+        if tasks := result.scalars().all():
             message = "⏰ *Upcoming Tasks Due in the Next 24 Hours:*\n\n"
             mailmessage = """
 <h1>⏰ Upcoming Tasks Due in the Next 24 Hours:</h1>
