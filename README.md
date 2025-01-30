@@ -4,4 +4,8 @@
 ## TODO
 - [x] Endpoints
 - [x] Authentication
+- [X] Email Notification
+- [X] Push Notification(SSE)
 - [ ] Tests
+
+> **Note:** Please test the '/' route for push notificaion or test the http://127.0.0.1:8000/tasks/push-notifications?token={access_token} in Postman.
