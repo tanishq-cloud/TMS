@@ -1,10 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from app.routers import tasks, auth, data_analysis, visualisation, trigger
 from app.database import init_db
 from app.utils.scheduler import init_scheduler
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import logging
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
 
@@ -37,6 +39,16 @@ async def startup_event():
 async def shutdown_event():
     scheduler.shutdown(wait=False)
     print("Scheduler shutdown.")
+
+
+
+templates = Jinja2Templates(directory="templates")
+
+#Check task push notification
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse('check.html',{"request":request})
+
 
 # Routers
 app.include_router(auth.router, prefix="/auth", tags=["Register and Access Token"])

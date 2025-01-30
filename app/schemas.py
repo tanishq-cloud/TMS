@@ -53,5 +53,10 @@ class UserResponse(BaseModel):
     id: int
     username: str
 
+class Event(BaseModel):
+    type: str
+    message: str
+
     class Config:
         orm_mode = True
+        

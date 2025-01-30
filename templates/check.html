@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.12.0/toastify.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 1.5rem;
+            max-width: 56rem;
+            margin: 0 auto;
+        }
+        .container {
+            width: 100%;
+        }
+        h1 {
+            font-size: 1.875rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+        }
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        #loginSection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+        }
+
+        .login-container {
+            max-width: 300px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-container input {
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 0;
+        }
+
+        .login-container button {
+            padding: 0.75rem;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+
+        .form-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        input, select {
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 0.25rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.25rem;
+            color: white;
+            cursor: pointer;
+        }
+        .btn-green { background-color: #22c55e; }
+        .btn-green:hover { background-color: #16a34a; }
+        .btn-yellow { background-color: #eab308; }
+        .btn-yellow:hover { background-color: #ca8a04; }
+        .btn-red { background-color: #ef4444; }
+        .btn-red:hover { background-color: #dc2626; }
+        .btn-purple { background-color: #a855f7; }
+        .btn-purple:hover { background-color: #9333ea; }
+        .btn-blue { background-color: #3b82f6; }
+        .btn-blue:hover { background-color: #2563eb; }
+        .notifications {
+            margin-top: 1.5rem;
+        }
+        .notification-item {
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Task Manager</h1>
+        
+        <div id="loginSection">
+            <h2>Login</h2>
+            <div class="login-container">
+                <input type="text" id="username" placeholder="Username" class="mb-2">
+                <input type="password" id="password" placeholder="Password" class="mb-2">
+                <button class="btn-blue" onclick="login()">Login</button>
+            </div>
+        </div>
+
+        <div id="taskSection" style="display: none;">
+            <h2>Create/Update Task</h2>
+            <div class="form-group">
+                <input type="text" id="taskName" placeholder="Task Name">
+                <input type="text" id="taskDescription" placeholder="Description">
+                <input type="datetime-local" id="taskDueDate">
+                <input type="text" id="taskAssignedTo" placeholder="Assigned To">
+                <select id="taskPriority">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </select>
+                <select id="taskStatus">
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <input type="text" id="taskId" placeholder="Task ID (for update/delete)">
+            </div>
+
+            <div class="button-group">
+                <button class="btn-green" onclick="handleCreateTask()">Create Task</button>
+                <button class="btn-yellow" onclick="handleUpdateTask()">Update Task</button>
+                <button class="btn-red" onclick="handleDeleteTask()">Delete Task</button>
+                <button class="btn-purple" onclick="generateRandomTaskData()">Generate Random Task</button>
+            </div>
+
+            <div class="notifications">
+                <h2>Notifications</h2>
+                <div id="notificationsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.12.0/toastify.js"></script>
+    
+    <script>
+        const api = axios.create({
+            baseURL: 'http://127.0.0.1:8000',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        let token = '';
+        const notifications = [];
+
+        function formatDate(date) {
+            return date.toISOString().slice(0, 19);
+        }
+
+        async function login() {
+            try {
+                const formData = new FormData();
+                formData.append('username', document.getElementById('username').value);
+                formData.append('password', document.getElementById('password').value);
+
+                const response = await axios.post('http://127.0.0.1:8000/auth/login', formData);
+
+                if (response.status === 200) {
+                    
+                    token = response.data.access_token;
+                    localStorage.setItem('username', response.data.userID);
+                    showToast('Login successful!', 'success');
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('taskSection').style.display = 'block';
+                    setupEventSource();
+                }
+            } catch (error) {
+                showToast('😓Login failed: ' + error.message, 'error');
+            }
+        }
+
+        function generateRandomTaskData() {
+            const priorities = ['low', 'medium', 'high'];
+            const randomPriority = priorities[Math.floor(Math.random() * 3)];
+            
+            const futureDate = new Date();
+            futureDate.setDate(futureDate.getDate() + Math.floor(Math.random() * 10) + 1);
+            
+            document.getElementById('taskName').value = `Task ${Math.floor(Math.random() * 1000)}`;
+            document.getElementById('taskDescription').value = `Description of task ${Math.floor(Math.random() * 1000)}`;
+            document.getElementById('taskDueDate').value = formatDate(futureDate);
+            document.getElementById('taskAssignedTo').value = `Person${Math.floor(Math.random() * 5) + 1}`;
+            document.getElementById('taskPriority').value = randomPriority;
+            document.getElementById('taskStatus').value = 'pending';
+        }
+
+        async function handleCreateTask() {
+            const taskData = getTaskData();
+            if (!taskData.name || !taskData.due_date) {
+                showToast('Name and due date are required!', 'warning');
+                return;
+            }
+
+            try {
+                const username = localStorage.getItem('username');
+                await api.post(`/tasks/?username=${username}`, taskData, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                clearForm();
+            } catch (error) {
+                showToast('Failed to create task: ' + error.message, 'error');
+            }
+        }
+
+        async function handleUpdateTask() {
+            const taskId = document.getElementById('taskId').value;
+            if (!taskId) {
+                showToast('Please enter a task ID to update', 'warning');
+                return;
+            }
+
+            try {
+                const username = localStorage.getItem('username');
+                await api.put(`/tasks/${taskId}/?username=${username}`, getTaskData(), {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            } catch (error) {
+                showToast('Failed to update task: ' + error.message, 'error');
+            }
+        }
+
+        async function handleDeleteTask() {
+            const taskId = document.getElementById('taskId').value;
+            if (!taskId) {
+                showToast('Please enter a task ID to delete', 'warning');
+                return;
+            }
+
+            try {
+                const username = localStorage.getItem('username');
+                await api.delete(`/tasks/${taskId}?username=${username}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                document.getElementById('taskId').value = '';
+            } catch (error) {
+                showToast('Failed to delete task: ' + error.message, 'error');
+            }
+        }
+
+        function getTaskData() {
+            return {
+                name: document.getElementById('taskName').value,
+                description: document.getElementById('taskDescription').value,
+                due_date: document.getElementById('taskDueDate').value,
+                assigned_to: document.getElementById('taskAssignedTo').value,
+                priority: document.getElementById('taskPriority').value,
+                status: document.getElementById('taskStatus').value
+            };
+        }
+
+        function clearForm() {
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskDescription').value = '';
+            document.getElementById('taskDueDate').value = '';
+            document.getElementById('taskAssignedTo').value = '';
+            document.getElementById('taskPriority').value = 'low';
+            document.getElementById('taskStatus').value = 'pending';
+        }
+
+        function setupEventSource() {
+            const eventSource = new EventSource(
+                `http://127.0.0.1:8000/tasks/push-notifications?token=${token}`
+            );
+
+            eventSource.onmessage = (event) => {
+                  
+                try {
+                    const lines = event.data.split('\n');
+                    const eventData = {};
+                    
+                    lines.forEach(line => {
+                        if (line) {
+                            const [key, ...values] = line.split(': ');
+                            const value = values.join(': ').trim();
+                            eventData[key] = value;
+                        }
+                    });
+
+                    if (eventData.event === 'heartbeat') {
+                        console.log('Heartbeat received');
+                        return;
+                    }
+
+                    notifications.unshift({
+                        event: eventData.event,
+                        message: eventData.data || eventData.message
+                    });
+                    updateNotificationsList();
+
+                    const toastType = getToastType(eventData.event);
+                    showToast(`${eventData.event}: ${eventData.data || eventData.message}`, toastType);
+                } catch (error) {
+                    console.error('Error parsing event data:', error);
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                console.error('EventSource failed:', error);
+                eventSource.close();
+            };
+        }
+
+        function updateNotificationsList() {
+            const list = document.getElementById('notificationsList');
+            list.innerHTML = notifications
+                .map(notification => `
+                    <div class="notification-item">
+                        <strong>${notification.event}:</strong> ${notification.message}
+                    </div>
+                `)
+                .join('');
+        }
+
+        function getToastType(event) {
+            switch (event) {
+                case 'task_deleted': return 'error';
+                case 'task_updated': return 'warning';
+                case 'task_created': return 'success';
+                default: return 'info';
+            }
+        }
+
+        function showToast(message, type) {
+            const colors = {
+                success: '#22c55e',
+                error: '#ef4444',
+                warning: '#eab308',
+                info: '#3b82f6'
+            };
+
+            Toastify({
+                text: message,
+                duration: 3000,
+                gravity: 'top',
+                position: 'right',
+                backgroundColor: colors[type],
+                stopOnFocus: true
+            }).showToast();
+        }
+    </script>
+</body>
+</html>
