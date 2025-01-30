@@ -314,6 +314,17 @@
 
                     const toastType = getToastType(eventData.event);
                     showToast(`${eventData.event}: ${eventData.data || eventData.message}`, toastType);
+                Notification.requestPermission().then((result) => {
+                        console.log(result);
+                      }); 
+                    
+                      switch (event) {
+                        case 'task_deleted': return new Notification(`Task Deleted`, { body: `${eventData.data || eventData.message}`} );
+                        case 'task_updated': return new Notification(`Task Up`, { body: `${eventData.data || eventData.message}`} );
+                        case 'task_created': return new Notification(`Task `, { body: `${eventData.data || eventData.message}`} );
+                        default: return 'info';
+                    }
+                    
                 } catch (error) {
                     console.error('Error parsing event data:', error);
                 }
